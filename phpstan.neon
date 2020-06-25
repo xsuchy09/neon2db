@@ -1,0 +1,4 @@
+parameters:
+	scanDirectories:
+		- %rootDir%/../../../src
+	checkMissingIterableValueType: false

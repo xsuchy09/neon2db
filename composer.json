@@ -1,0 +1,45 @@
+{
+	"name": "xsuchy09/nette-neon2db",
+	"description": "Library to save data from neon file into the database.",
+	"keywords": ["neon", "database", "nette"],
+	"type": "library",
+	"minimum-stability": "stable",
+	"license": "proprietary",
+	"authors": [
+		{
+			"name": "Ing. Petr Suchý (xsuchy09)",
+			"email": "suchy@wamos.cz",
+			"homepage": "http://www.wamos.cz/",
+			"role": "Developer"
+		}
+	],
+	"require": {
+		"php": ">= 7.4",
+		"ext-json": "*",
+		"ext-pdo": "*",
+		"nette/database": "^3.0",
+		"nette/neon": "^3.1",
+		"nette/utils": "^3.1"
+	},
+	"autoload": {
+		"psr-4": {
+			"xsuchy09\\Neon2Db\\": "src/",
+			"xsuchy09\\Neon2Db\\Tests\\": "tests/"
+		}
+	},
+	"config": {
+		"sort-packages": true,
+		"platform": {
+			"php": "7.4"
+		}
+	},
+	"scripts": {
+		"phpstan": "./vendor/bin/phpstan analyse -c phpstan.neon ./src  --level=7"
+	},
+	"require-dev": {
+		"nette/tester": "^2.3",
+		"phpstan/extension-installer": "^1.0",
+		"phpstan/phpstan": "^0.12.31",
+		"phpstan/phpstan-nette": "^0.12.6"
+	}
+}
