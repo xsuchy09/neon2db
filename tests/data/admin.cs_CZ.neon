@@ -1,20 +1,20 @@
 user:
-	title: "User module"
+	title: "Uživatelský modul"
 	dataGrid:
 		column:
 			id: "ID"
-			title: "Title"
+			name: "Název"
 
 	form:
 		input:
 			id:
 				label: "ID"
-			title:
-				label: "Title"
+			name:
+				label: "Název"
 
 setting:
-	title: "Settings"
+	title: "Nastavení"
 	dataGrid:
 		column:
-			key: "Key"
-			value: "Value"
+			key: "Klíč"
+			value: "Hodnota"

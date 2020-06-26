@@ -1,0 +1,20 @@
+user:
+	title: "User module"
+	dataGrid:
+		column:
+			id: "ID"
+			name: "Name"
+
+	form:
+		input:
+			id:
+				label: "ID"
+			name:
+				label: "Name"
+
+setting:
+	title: "Settings"
+	dataGrid:
+		column:
+			key: "Key"
+			value: "Value"

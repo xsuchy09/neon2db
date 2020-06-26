@@ -11,7 +11,9 @@ declare(strict_types=1);
 
 namespace xsuchy09\Neon2Db;
 
+use DirectoryIterator;
 use Nette\Database\Connection;
+use Nette\Database\IRow;
 use Nette\Neon\Neon;
 use Nette\Utils\FileSystem;
 use xsuchy09\Neon2Db\DI\Configuration;
@@ -48,12 +50,52 @@ class Neon2Database
 	 * @param string $path
 	 * @param bool   $justInsertNew
 	 */
-	public function updateFromFile(string $path, bool $justInsertNew = true): void
+	public function insertFromNeon(string $path, bool $justInsertNew = true): void
 	{
 		$filename = pathinfo($path, PATHINFO_FILENAME);
-		$data = self::getDataFromFile($path);
+		$data = self::getDataFromNeon($path);
 		$dbData = $this->prepareData($filename, $data);
 		$this->insert2Database($dbData, $justInsertNew);
+	}
+
+	/**
+	 * @param string $path
+	 * @param bool   $justInsertNew
+	 */
+	public function updateFromNeon(string $path, bool $justInsertNew = false): void
+	{
+		$filename = pathinfo($path, PATHINFO_FILENAME);
+		$data = self::getDataFromNeon($path);
+		$dbData = $this->prepareData($filename, $data);
+		$this->insert2Database($dbData, $justInsertNew);
+	}
+
+	/**
+	 * @param string $path
+	 * @param bool   $justInsertNew
+	 */
+	public function insertFromDir(string $path, bool $justInsertNew = true): void
+	{
+		$dir = new DirectoryIterator($path);
+		foreach ($dir as $file) {
+			if ($file->isDot() === false && $file->isFile() === true && strtolower($file->getExtension()) === 'neon') {
+				$this->insertFromNeon($file->getRealPath(), $justInsertNew);
+			}
+		}
+	}
+
+	/**
+	 * @param string $path
+	 * @param bool   $justInsertNew
+	 */
+	public function updateFromDir(string $path, $justInsertNew = false): void
+	{
+		$dir = new DirectoryIterator($path);
+		foreach ($dir as $file) {
+			if ($file->isDot() === false && $file->isFile() === true && strtolower($file->getExtension()) === 'neon') {
+				$this->updateFromNeon($file->getRealPath(), $justInsertNew);
+			}
+		}
 	}
 
 	/**
@@ -61,7 +103,7 @@ class Neon2Database
 	 *
 	 * @return array
 	 */
-	public static function getDataFromFile(string $path): array
+	public static function getDataFromNeon(string $path): array
 	{
 		$fileContent = FileSystem::read($path);
 		$neonItems = Neon::decode($fileContent);
@@ -92,6 +134,96 @@ class Neon2Database
 	}
 
 	/**
+	 * @param string      $dirPath
+	 * @param string|null $file
+	 * @param string|null $locale
+	 */
+	public function saveToNeon(string $dirPath, ?string $file = null, ?string $locale = null): void
+	{
+		// get all data from database and save it to neon files
+		$translates = $this->getDataFromDatabase($file, $locale);
+		if (count($translates) > 0) {
+			$file = null;
+			$locale = null;
+			$neonData = [];
+			foreach ($translates as $translate) {
+				if (($file !== null && $file !== $translate->offsetGet('file')) ||
+					($locale !== null && $locale !== $translate->offsetGet('locale'))) {
+					// save prev messages to file
+					FileSystem::write($dirPath . $file . '.' . $locale . '.neon', Neon::encode($neonData, Neon::BLOCK), 0664);
+					$neonData = [];
+				}
+				$file = $translate->offsetGet('file');
+				$locale = $translate->offsetGet('locale');
+				$keys = explode('.', $translate->offsetGet('key'));
+
+				$this->createArray($neonData, $keys, $translate->offsetGet('message'));
+			}
+			if (count($neonData) > 0) {
+				FileSystem::write($dirPath . $file . '.' . $locale . '.neon', Neon::encode($neonData,Neon::BLOCK), 0664);
+			}
+		}
+	}
+
+	/**
+	 * @param string|null $file
+	 * @param string|null $locale
+	 *
+	 * @return array|IRow[]
+	 */
+	protected function getDataFromDatabase(?string $file = null, ?string $locale = null): array
+	{
+		$conditions = [];
+		if ($file !== null) {
+			$conditions['file'] = $file;
+		}
+		if ($locale !== null) {
+			$conditions['locale'] = $locale;
+		}
+		if (count($conditions) > 0) {
+			$result = $this->connection->query('SELECT ?name, ?name, ?name, ?name FROM ?name WHERE',
+				$this->configuration->getFile(),
+				$this->configuration->getLocale(),
+				$this->configuration->getKey(),
+				$this->configuration->getMessage(),
+				$this->configuration->getTable(),
+				$conditions,
+				'ORDER BY ?name, ?name, ?name',
+				$this->configuration->getFile(),
+				$this->configuration->getLocale(),
+				$this->configuration->getKey()
+			);
+		} else {
+			$result = $this->connection->query('SELECT ?name, ?name, ?name, ?name FROM ?name ORDER BY ?name, ?name, ?name',
+				$this->configuration->getFile(),
+				$this->configuration->getLocale(),
+				$this->configuration->getKey(),
+				$this->configuration->getMessage(),
+				$this->configuration->getTable(),
+				$this->configuration->getFile(),
+				$this->configuration->getLocale(),
+				$this->configuration->getKey()
+			);
+		}
+		return $result->fetchAll();
+	}
+
+	/**
+	 * @param array  $array
+	 * @param array  $keys
+	 * @param string $message
+	 */
+	protected function createArray(array &$array, array $keys, string $message): void
+	{
+		$temp =& $array;
+
+		foreach ($keys as $key) {
+			$temp =& $temp[$key];
+		}
+		$temp = $message;
+	}
+
+	/**
 	 * @param string $filenameAndLocale
 	 * @param array  $data
 	 *
@@ -111,18 +243,25 @@ class Neon2Database
 				$this->configuration->getMessage() => $value
 			];
 		}
-
 		return $dbData;
 	}
 
 	/**
-	 * @param string $key
+	 * @param array $item
 	 *
 	 * @return int|null
 	 */
-	protected function getTranslateId(string $key): ?int
+	protected function getTranslateId(array $item): ?int
 	{
-		return $this->connection->query('SELECT ?name FROM ?name WHERE ?name = ?', $this->configuration->getId(), $this->configuration->getTable(), $this->configuration->getKey(), $key)->fetchField();
+		return $this->connection->query('SELECT ?name FROM ?name WHERE ?name = ? AND ?name = ? AND ?name = ?',
+			$this->configuration->getId(),
+			$this->configuration->getTable(),
+			$this->configuration->getFile(),
+			$item[$this->configuration->getFile()],
+			$this->configuration->getLocale(),
+			$item[$this->configuration->getLocale()],
+			$this->configuration->getKey(),
+			$item[$this->configuration->getKey()])->fetchField();
 	}
 
 	/**
@@ -132,7 +271,7 @@ class Neon2Database
 	protected function insert2Database(array $data, bool $justInsertNew = true): void
 	{
 		foreach ($data as $item) {
-			$translateId = $this->getTranslateId($item[$this->configuration->getKey()]);
+			$translateId = $this->getTranslateId($item);
 			if ($translateId === null) {
 				$this->connection->query('INSERT INTO ?name', $this->configuration->getTable(), $item);
 			} else if ($justInsertNew === false) {

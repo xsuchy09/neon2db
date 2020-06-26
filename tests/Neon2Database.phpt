@@ -55,6 +55,8 @@ class Neon2Database extends \Tester\TestCase
 	{
 		parent::setUp();
 
+		Environment::lock('database', __DIR__ . '/tmp');
+
 		$args = Environment::loadData();
 
 		$this->configuration = new Configuration();
@@ -78,17 +80,17 @@ class Neon2Database extends \Tester\TestCase
 		$this->neon2Database = new \xsuchy09\Neon2Db\Neon2Database($this->connection, $this->configuration);
 	}
 
-	public function testGetDataFromFile(): void
+	public function testGetDataFromNeon(): void
 	{
-		$data = \xsuchy09\Neon2Db\Neon2Database::getDataFromFile(self::NEON_FILE);
+		$data = \xsuchy09\Neon2Db\Neon2Database::getDataFromNeon(self::NEON_FILE);
 
 		Assert::type('array', $data);
 		Assert::same(8, count($data));
-		Assert::contains('User module', $data);
-		Assert::same('User module', $data['user.title']);
+		Assert::contains('Uživatelský modul', $data);
+		Assert::same('Uživatelský modul', $data['user.title']);
 	}
 
-	public function getDataFromNeonItems(): void
+	public function testGetDataFromNeonItems(): void
 	{
 		$neonItems = [
 			'user' => [
@@ -106,38 +108,127 @@ class Neon2Database extends \Tester\TestCase
 		Assert::same('User detail', $data['user.detail.title']);
 	}
 
-	public function testUpdateFromFile(): void
+	public function testInsertFromNeon(): void
 	{
-		$this->neon2Database->updateFromFile(self::NEON_FILE);
+		$this->neon2Database->insertFromNeon(self::NEON_FILE, true);
 		$result = $this->connection->query('SELECT * FROM ?name', $this->configuration->getTable());
 		Assert::same(8, $result->getRowCount());
 
-		$item = $this->getItem('user.form.input.title.label');
-		Assert::same('Title', $item->offsetGet($this->configuration->getMessage()));
+		$item = $this->getItem('admin', 'cs_CZ', 'user.form.input.name.label');
+		Assert::same('Název', $item->offsetGet($this->configuration->getMessage()));
 
 		Assert::null($item->offsetGet($this->configuration->getUpdated()));
 
-		$this->neon2Database->updateFromFile(self::NEON_FILE, false); // so update existing records too
-		$item = $this->getItem('user.form.input.title.label');
-		Assert::same('Title', $item->offsetGet($this->configuration->getMessage()));
+		$this->neon2Database->insertFromNeon(self::NEON_FILE, false); // so update existing records too
+		$item = $this->getItem('admin', 'cs_CZ', 'user.form.input.name.label');
+		Assert::same('Název', $item->offsetGet($this->configuration->getMessage()));
+		Assert::notNull($item->offsetGet($this->configuration->getUpdated()));
+	}
+
+	public function testUpdateFromNeon(): void
+	{
+		$this->neon2Database->updateFromNeon(self::NEON_FILE, true);
+		$result = $this->connection->query('SELECT * FROM ?name', $this->configuration->getTable());
+		Assert::same(8, $result->getRowCount());
+
+		$item = $this->getItem('admin', 'cs_CZ', 'user.form.input.name.label');
+		Assert::same('Název', $item->offsetGet($this->configuration->getMessage()));
+
+		Assert::null($item->offsetGet($this->configuration->getUpdated()));
+
+		$this->neon2Database->updateFromNeon(self::NEON_FILE, false); // so update existing records too
+		$item = $this->getItem('admin', 'cs_CZ', 'user.form.input.name.label');
+		Assert::same('Název', $item->offsetGet($this->configuration->getMessage()));
+		Assert::notNull($item->offsetGet($this->configuration->getUpdated()));
+	}
+
+	public function testSaveToNeon(): void
+	{
+		$this->neon2Database->insertFromNeon(self::NEON_FILE);
+		$this->neon2Database->saveToNeon(__DIR__ . '/data/export/', 'admin', 'cs_CZ');
+		Assert::equal(
+			Neon::decode(FileSystem::read(self::NEON_FILE)),
+			Neon::decode(FileSystem::read(__DIR__ . '/data/export/' . pathinfo(self::NEON_FILE, PATHINFO_BASENAME)))
+		);
+	}
+
+	public function testSaveToNeonAll(): void
+	{
+		$this->neon2Database->insertFromDir(pathinfo(self::NEON_FILE, PATHINFO_DIRNAME));
+		$this->neon2Database->saveToNeon(__DIR__ . '/data/export/');
+		$dirPath = pathinfo(self::NEON_FILE, PATHINFO_DIRNAME);
+		$dir = new \DirectoryIterator($dirPath);
+		foreach ($dir as $file) {
+			if ($file->isDot() === false && $file->isFile() === true && $file->getExtension() === 'neon') {
+				Assert::equal(
+					Neon::decode(FileSystem::read($file->getRealPath())),
+					Neon::decode(FileSystem::read(__DIR__ . '/data/export/' . $file->getBasename()))
+				);
+			}
+		}
+	}
+	
+	public function testInsertFromDir(): void
+	{
+		$this->neon2Database->insertFromDir(pathinfo(self::NEON_FILE, PATHINFO_DIRNAME));
+		$result = $this->connection->query('SELECT * FROM ?name', $this->configuration->getTable());
+		Assert::same(16, $result->getRowCount());
+		
+		$item = $this->getItem('admin', 'cs_CZ', 'user.form.input.name.label');
+		Assert::same('Název', $item->offsetGet($this->configuration->getMessage()));
+		$item = $this->getItem('admin', 'en_US', 'user.form.input.name.label');
+		Assert::same('Name', $item->offsetGet($this->configuration->getMessage()));
+
+		Assert::null($item->offsetGet($this->configuration->getUpdated()));
+
+		$this->neon2Database->insertFromDir(pathinfo(self::NEON_FILE, PATHINFO_DIRNAME), false); // so update existing records too
+		$item = $this->getItem('admin', 'cs_CZ', 'user.form.input.name.label');
+		Assert::same('Název', $item->offsetGet($this->configuration->getMessage()));
+		Assert::notNull($item->offsetGet($this->configuration->getUpdated()));
+		$item = $this->getItem('admin', 'en_US', 'user.form.input.name.label');
+		Assert::same('Name', $item->offsetGet($this->configuration->getMessage()));
+		Assert::notNull($item->offsetGet($this->configuration->getUpdated()));
+	}
+
+	public function testUpdateFromDir(): void
+	{
+		$this->neon2Database->updateFromDir(pathinfo(self::NEON_FILE, PATHINFO_DIRNAME), true);
+		$result = $this->connection->query('SELECT * FROM ?name', $this->configuration->getTable());
+		Assert::same(16, $result->getRowCount());
+
+		$item = $this->getItem('admin', 'cs_CZ', 'user.form.input.name.label');
+		Assert::same('Název', $item->offsetGet($this->configuration->getMessage()));
+		$item = $this->getItem('admin', 'en_US', 'user.form.input.name.label');
+		Assert::same('Name', $item->offsetGet($this->configuration->getMessage()));
+
+		Assert::null($item->offsetGet($this->configuration->getUpdated()));
+
+		$this->neon2Database->updateFromDir(pathinfo(self::NEON_FILE, PATHINFO_DIRNAME), false); // so update existing records too
+		$item = $this->getItem('admin', 'cs_CZ', 'user.form.input.name.label');
+		Assert::same('Název', $item->offsetGet($this->configuration->getMessage()));
+		Assert::notNull($item->offsetGet($this->configuration->getUpdated()));
+		$item = $this->getItem('admin', 'en_US', 'user.form.input.name.label');
+		Assert::same('Name', $item->offsetGet($this->configuration->getMessage()));
 		Assert::notNull($item->offsetGet($this->configuration->getUpdated()));
 	}
 
 	/**
+	 * @param string $file
+	 * @param string $locale
 	 * @param string $key
 	 *
 	 * @return IRow|null
 	 */
-	protected function getItem(string $key): ?IRow
+	protected function getItem(string $file, string $locale, string $key): ?IRow
 	{
 		return $this->connection->query('SELECT ?name, ?name FROM ?name WHERE ?name = ? AND ?name = ? AND ?name = ?',
 			$this->configuration->getMessage(),
 			$this->configuration->getUpdated(),
 			$this->configuration->getTable(),
-			$this->configuration->getFile(),
-			'admin',
+			$this->configuration->getFile(), 
+			$file,
 			$this->configuration->getLocale(),
-			'cs_CZ',
+			$locale,
 			$this->configuration->getKey(),
 			$key)->fetch();
 	}
