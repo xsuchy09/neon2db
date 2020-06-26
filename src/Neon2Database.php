@@ -110,13 +110,13 @@ class Neon2Database
 	}
 
 	/**
-	 * @param array       $neonItems
-	 * @param string|null $key
-	 * @param array       $data
+	 * @param array           $neonItems
+	 * @param string|int|null $key
+	 * @param array           $data
 	 *
 	 * @return array
 	 */
-	public static function getDataFromNeonItems(array $neonItems, string $key = null, array &$data = []): array
+	public static function getDataFromNeonItems(array $neonItems, $key = null, array &$data = []): array
 	{
 		foreach ($neonItems as $itemKey => $itemValue) {
 			if ($key !== null) {

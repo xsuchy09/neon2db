@@ -87,7 +87,7 @@ class Neon2DatabaseTest extends \Tester\TestCase
 		$data = Neon2Database::getDataFromNeon(self::NEON_FILE);
 
 		Assert::type('array', $data);
-		Assert::same(8, count($data));
+		Assert::same(9, count($data));
 		Assert::contains('Uživatelský modul', $data);
 		Assert::same('Uživatelský modul', $data['user.title']);
 	}
@@ -114,7 +114,7 @@ class Neon2DatabaseTest extends \Tester\TestCase
 	{
 		$this->neon2Database->insertFromNeon(self::NEON_FILE, true);
 		$result = $this->connection->query('SELECT * FROM ?name', $this->configuration->getTable());
-		Assert::same(8, $result->getRowCount());
+		Assert::same(9, $result->getRowCount());
 
 		$item = $this->getItem('admin', 'cs_CZ', 'user.form.input.name.label');
 		Assert::same('Název', $item->offsetGet($this->configuration->getMessage()));
@@ -131,7 +131,7 @@ class Neon2DatabaseTest extends \Tester\TestCase
 	{
 		$this->neon2Database->updateFromNeon(self::NEON_FILE, true);
 		$result = $this->connection->query('SELECT * FROM ?name', $this->configuration->getTable());
-		Assert::same(8, $result->getRowCount());
+		Assert::same(9, $result->getRowCount());
 
 		$item = $this->getItem('admin', 'cs_CZ', 'user.form.input.name.label');
 		Assert::same('Název', $item->offsetGet($this->configuration->getMessage()));
@@ -174,7 +174,7 @@ class Neon2DatabaseTest extends \Tester\TestCase
 	{
 		$this->neon2Database->insertFromDir(pathinfo(self::NEON_FILE, PATHINFO_DIRNAME));
 		$result = $this->connection->query('SELECT * FROM ?name', $this->configuration->getTable());
-		Assert::same(16, $result->getRowCount());
+		Assert::same(18, $result->getRowCount());
 		
 		$item = $this->getItem('admin', 'cs_CZ', 'user.form.input.name.label');
 		Assert::same('Název', $item->offsetGet($this->configuration->getMessage()));
@@ -196,7 +196,7 @@ class Neon2DatabaseTest extends \Tester\TestCase
 	{
 		$this->neon2Database->updateFromDir(pathinfo(self::NEON_FILE, PATHINFO_DIRNAME), true);
 		$result = $this->connection->query('SELECT * FROM ?name', $this->configuration->getTable());
-		Assert::same(16, $result->getRowCount());
+		Assert::same(18, $result->getRowCount());
 
 		$item = $this->getItem('admin', 'cs_CZ', 'user.form.input.name.label');
 		Assert::same('Název', $item->offsetGet($this->configuration->getMessage()));
