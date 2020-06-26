@@ -1,4 +1,4 @@
-# nette-neon2db
+# neon2db
 Library to save data from neon file to the database and back to the neon file. It can be helpful for managing translates in the database for [Kdyby/Translation](https://github.com/Kdyby/Translation).
 
 ## Install
