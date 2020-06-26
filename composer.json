@@ -1,7 +1,7 @@
 {
 	"name": "xsuchy09/nette-neon2db",
 	"description": "Library to save data from neon file into the database.",
-	"keywords": ["neon", "database", "nette"],
+	"keywords": ["neon", "database", "nette", "translation"],
 	"type": "library",
 	"minimum-stability": "stable",
 	"license": "proprietary",
