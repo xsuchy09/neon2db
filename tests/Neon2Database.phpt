@@ -15,21 +15,23 @@ declare(strict_types=1);
 
 namespace xsuchy09\Neon2Db\Tests;
 
+use Exception;
 use Nette\Database\Connection;
 use Nette\Database\IRow;
 use Nette\Neon\Neon;
 use Nette\Utils\FileSystem;
 use Tester\Assert;
 use Tester\Environment;
-use xsuchy09\Neon2Db\DI\Configuration;
+use xsuchy09\Neon2Db\Configuration;
+use xsuchy09\Neon2Db\Neon2Database;
 
 require_once __DIR__ . '/bootstrap.php';
 
 /**
- * Class Neon2Database
+ * Class Neon2DatabaseTest
  * @package xsuchy09\Neon2Db\Tests
  */
-class Neon2Database extends \Tester\TestCase
+class Neon2DatabaseTest extends \Tester\TestCase
 {
 	const NEON_FILE = __DIR__ . '/data/admin.cs_CZ.neon';
 
@@ -44,12 +46,12 @@ class Neon2Database extends \Tester\TestCase
 	protected Connection $connection;
 
 	/**
-	 * @var \xsuchy09\Neon2Db\Neon2Database
+	 * @var Neon2Database
 	 */
-	protected \xsuchy09\Neon2Db\Neon2Database $neon2Database;
+	protected Neon2Database $neon2Database;
 
 	/**
-	 * @throws \Exception
+	 * @throws Exception
 	 */
 	protected function setUp(): void
 	{
@@ -77,12 +79,12 @@ class Neon2Database extends \Tester\TestCase
 
 		$this->connection->query('TRUNCATE TABLE ?name RESTART IDENTITY CASCADE', $this->configuration->getTable());
 
-		$this->neon2Database = new \xsuchy09\Neon2Db\Neon2Database($this->connection, $this->configuration);
+		$this->neon2Database = new Neon2Database($this->connection, $this->configuration);
 	}
 
 	public function testGetDataFromNeon(): void
 	{
-		$data = \xsuchy09\Neon2Db\Neon2Database::getDataFromNeon(self::NEON_FILE);
+		$data = Neon2Database::getDataFromNeon(self::NEON_FILE);
 
 		Assert::type('array', $data);
 		Assert::same(8, count($data));
@@ -100,7 +102,7 @@ class Neon2Database extends \Tester\TestCase
 				]
 			]
 		];
-		$data = \xsuchy09\Neon2Db\Neon2Database::getDataFromNeonItems($neonItems);
+		$data = Neon2Database::getDataFromNeonItems($neonItems);
 
 		Assert::type('array', $data);
 		Assert::same(2, count($data));
@@ -234,4 +236,4 @@ class Neon2Database extends \Tester\TestCase
 	}
 }
 
-(new Neon2Database)->run();
+(new Neon2DatabaseTest)->run();

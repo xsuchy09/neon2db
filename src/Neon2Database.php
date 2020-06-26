@@ -16,7 +16,6 @@ use Nette\Database\Connection;
 use Nette\Database\IRow;
 use Nette\Neon\Neon;
 use Nette\Utils\FileSystem;
-use xsuchy09\Neon2Db\DI\Configuration;
 
 /**
  * Class Neon2Database

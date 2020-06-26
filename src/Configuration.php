@@ -9,11 +9,11 @@
 
 declare(strict_types=1);
 
-namespace xsuchy09\Neon2Db\DI;
+namespace xsuchy09\Neon2Db;
 
 /**
  * Class Configuration
- * @package xsuchy09\Neon2Db\DI
+ * @package xsuchy09\Neon2Db
  */
 class Configuration
 {
